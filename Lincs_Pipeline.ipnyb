@@ -1,0 +1,299 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "source": [
+    "First week attempt of taking in the Lincs gz files (level 3-4) as Adeniyi did as well.\n",
+    "\n",
+    "This will be needed at a later point! Right now, week2, I am focussing on just using the level 5 consensus from the other part of the repo. "
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "import pandas as pd\n",
+    "import numpy as np"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "markdown",
+   "source": [
+    "## Load data"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%% md\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "profile_dir = '/Users/mbornhol/git/lincs-cell-painting/profiles/2016_04_01_a549_48hr_batch1'\n",
+    "#os.listdir(profile_dir) ##files in profiles"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "outputs": [],
+   "source": [
+    "def get_normalized_dmso_files(profile_dir):\n",
+    "    \"\"\"\n",
+    "    This function gets all normalized dmso Level-4 LINCS\n",
+    "    Cell Painting .csv files from the profiles directory\n",
+    "    \"\"\"\n",
+    "    normalized_dmso_csv_files = []\n",
+    "    for root, dirs, files in os.walk(profile_dir, topdown=False):\n",
+    "        for file in files:\n",
+    "            if file.endswith('normalized_dmso.csv.gz'):\n",
+    "                normalized_dmso_csv_files.append(os.path.join(root, file))\n",
+    "\n",
+    "    return normalized_dmso_csv_files\n"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "outputs": [],
+   "source": [
+    "normalized_dmso_lvl4_files = get_normalized_dmso_files(profile_dir)\n"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "136\n"
+     ]
+    }
+   ],
+   "source": [
+    "df_level4 = pd.concat(map(pd.read_csv, normalized_dmso_lvl4_files)).reset_index(drop=True)\n",
+    "print(len(df_level4['Metadata_Plate'].unique()))"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "outputs": [
+    {
+     "data": {
+      "text/plain": "(52223, 1809)"
+     },
+     "execution_count": 20,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_level4.shape"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "outputs": [],
+   "source": [
+    "def select_features(df):\n",
+    "    \"\"\"\n",
+    "    Perform feature selection by dropping columns with null values\n",
+    "    (greater than 384 i.e. equivalent to one plate worth of cell profiles)\n",
+    "    and highly correlated values from the data.\n",
+    "    \"\"\"\n",
+    "    metadata_columns = [x for x in df.columns if (x.startswith(\"Metadata_\"))]\n",
+    "    df_lvl4_metadata = df[metadata_columns].copy()\n",
+    "    df_lvl4_features = df.drop(metadata_columns, axis = 1)\n",
+    "    null_cols = [col for col in df_lvl4_features.columns if df_lvl4_features[col].isnull().sum() > 384]\n",
+    "    df_lvl4_features.drop(null_cols, axis = 1, inplace=True)\n",
+    "    #df_lvl4_features = feature_select(df_lvl4_features, operation=[\"correlation_threshold\", \"variance_threshold\"])\n",
+    "\n",
+    "    return df_lvl4_features"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "source": [
+    "df_level4_new = select_features(df_level4)\n"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   },
+   "execution_count": 13,
+   "outputs": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "outputs": [
+    {
+     "ename": "KeyError",
+     "evalue": "'Metadata_Plate'",
+     "output_type": "error",
+     "traceback": [
+      "\u001B[0;31m---------------------------------------------------------------------------\u001B[0m",
+      "\u001B[0;31mKeyError\u001B[0m                                  Traceback (most recent call last)",
+      "\u001B[0;32m~/miniconda3/envs/lincs/lib/python3.7/site-packages/pandas/core/indexes/base.py\u001B[0m in \u001B[0;36mget_loc\u001B[0;34m(self, key, method, tolerance)\u001B[0m\n\u001B[1;32m   2645\u001B[0m             \u001B[0;32mtry\u001B[0m\u001B[0;34m:\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[0;32m-> 2646\u001B[0;31m                 \u001B[0;32mreturn\u001B[0m \u001B[0mself\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0m_engine\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0mget_loc\u001B[0m\u001B[0;34m(\u001B[0m\u001B[0mkey\u001B[0m\u001B[0;34m)\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[0m\u001B[1;32m   2647\u001B[0m             \u001B[0;32mexcept\u001B[0m \u001B[0mKeyError\u001B[0m\u001B[0;34m:\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n",
+      "\u001B[0;32mpandas/_libs/index.pyx\u001B[0m in \u001B[0;36mpandas._libs.index.IndexEngine.get_loc\u001B[0;34m()\u001B[0m\n",
+      "\u001B[0;32mpandas/_libs/index.pyx\u001B[0m in \u001B[0;36mpandas._libs.index.IndexEngine.get_loc\u001B[0;34m()\u001B[0m\n",
+      "\u001B[0;32mpandas/_libs/hashtable_class_helper.pxi\u001B[0m in \u001B[0;36mpandas._libs.hashtable.PyObjectHashTable.get_item\u001B[0;34m()\u001B[0m\n",
+      "\u001B[0;32mpandas/_libs/hashtable_class_helper.pxi\u001B[0m in \u001B[0;36mpandas._libs.hashtable.PyObjectHashTable.get_item\u001B[0;34m()\u001B[0m\n",
+      "\u001B[0;31mKeyError\u001B[0m: 'Metadata_Plate'",
+      "\nDuring handling of the above exception, another exception occurred:\n",
+      "\u001B[0;31mKeyError\u001B[0m                                  Traceback (most recent call last)",
+      "\u001B[0;32m<ipython-input-19-876a35834a6f>\u001B[0m in \u001B[0;36m<module>\u001B[0;34m\u001B[0m\n\u001B[1;32m      1\u001B[0m \u001B[0;31m#[x for x in df_level4_new.columns if (x.startswith(\"Metadata_\"))]\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[0;32m----> 2\u001B[0;31m \u001B[0mdf_level4_new\u001B[0m\u001B[0;34m[\u001B[0m\u001B[0;34m'Metadata_Plate'\u001B[0m\u001B[0;34m]\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0munique\u001B[0m\u001B[0;34m(\u001B[0m\u001B[0;34m)\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[0m\u001B[1;32m      3\u001B[0m \u001B[0;34m\u001B[0m\u001B[0m\n",
+      "\u001B[0;32m~/miniconda3/envs/lincs/lib/python3.7/site-packages/pandas/core/frame.py\u001B[0m in \u001B[0;36m__getitem__\u001B[0;34m(self, key)\u001B[0m\n\u001B[1;32m   2798\u001B[0m             \u001B[0;32mif\u001B[0m \u001B[0mself\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0mcolumns\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0mnlevels\u001B[0m \u001B[0;34m>\u001B[0m \u001B[0;36m1\u001B[0m\u001B[0;34m:\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[1;32m   2799\u001B[0m                 \u001B[0;32mreturn\u001B[0m \u001B[0mself\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0m_getitem_multilevel\u001B[0m\u001B[0;34m(\u001B[0m\u001B[0mkey\u001B[0m\u001B[0;34m)\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[0;32m-> 2800\u001B[0;31m             \u001B[0mindexer\u001B[0m \u001B[0;34m=\u001B[0m \u001B[0mself\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0mcolumns\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0mget_loc\u001B[0m\u001B[0;34m(\u001B[0m\u001B[0mkey\u001B[0m\u001B[0;34m)\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[0m\u001B[1;32m   2801\u001B[0m             \u001B[0;32mif\u001B[0m \u001B[0mis_integer\u001B[0m\u001B[0;34m(\u001B[0m\u001B[0mindexer\u001B[0m\u001B[0;34m)\u001B[0m\u001B[0;34m:\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[1;32m   2802\u001B[0m                 \u001B[0mindexer\u001B[0m \u001B[0;34m=\u001B[0m \u001B[0;34m[\u001B[0m\u001B[0mindexer\u001B[0m\u001B[0;34m]\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n",
+      "\u001B[0;32m~/miniconda3/envs/lincs/lib/python3.7/site-packages/pandas/core/indexes/base.py\u001B[0m in \u001B[0;36mget_loc\u001B[0;34m(self, key, method, tolerance)\u001B[0m\n\u001B[1;32m   2646\u001B[0m                 \u001B[0;32mreturn\u001B[0m \u001B[0mself\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0m_engine\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0mget_loc\u001B[0m\u001B[0;34m(\u001B[0m\u001B[0mkey\u001B[0m\u001B[0;34m)\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[1;32m   2647\u001B[0m             \u001B[0;32mexcept\u001B[0m \u001B[0mKeyError\u001B[0m\u001B[0;34m:\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[0;32m-> 2648\u001B[0;31m                 \u001B[0;32mreturn\u001B[0m \u001B[0mself\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0m_engine\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0mget_loc\u001B[0m\u001B[0;34m(\u001B[0m\u001B[0mself\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0m_maybe_cast_indexer\u001B[0m\u001B[0;34m(\u001B[0m\u001B[0mkey\u001B[0m\u001B[0;34m)\u001B[0m\u001B[0;34m)\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[0m\u001B[1;32m   2649\u001B[0m         \u001B[0mindexer\u001B[0m \u001B[0;34m=\u001B[0m \u001B[0mself\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0mget_indexer\u001B[0m\u001B[0;34m(\u001B[0m\u001B[0;34m[\u001B[0m\u001B[0mkey\u001B[0m\u001B[0;34m]\u001B[0m\u001B[0;34m,\u001B[0m \u001B[0mmethod\u001B[0m\u001B[0;34m=\u001B[0m\u001B[0mmethod\u001B[0m\u001B[0;34m,\u001B[0m \u001B[0mtolerance\u001B[0m\u001B[0;34m=\u001B[0m\u001B[0mtolerance\u001B[0m\u001B[0;34m)\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n\u001B[1;32m   2650\u001B[0m         \u001B[0;32mif\u001B[0m \u001B[0mindexer\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0mndim\u001B[0m \u001B[0;34m>\u001B[0m \u001B[0;36m1\u001B[0m \u001B[0;32mor\u001B[0m \u001B[0mindexer\u001B[0m\u001B[0;34m.\u001B[0m\u001B[0msize\u001B[0m \u001B[0;34m>\u001B[0m \u001B[0;36m1\u001B[0m\u001B[0;34m:\u001B[0m\u001B[0;34m\u001B[0m\u001B[0;34m\u001B[0m\u001B[0m\n",
+      "\u001B[0;32mpandas/_libs/index.pyx\u001B[0m in \u001B[0;36mpandas._libs.index.IndexEngine.get_loc\u001B[0;34m()\u001B[0m\n",
+      "\u001B[0;32mpandas/_libs/index.pyx\u001B[0m in \u001B[0;36mpandas._libs.index.IndexEngine.get_loc\u001B[0;34m()\u001B[0m\n",
+      "\u001B[0;32mpandas/_libs/hashtable_class_helper.pxi\u001B[0m in \u001B[0;36mpandas._libs.hashtable.PyObjectHashTable.get_item\u001B[0;34m()\u001B[0m\n",
+      "\u001B[0;32mpandas/_libs/hashtable_class_helper.pxi\u001B[0m in \u001B[0;36mpandas._libs.hashtable.PyObjectHashTable.get_item\u001B[0;34m()\u001B[0m\n",
+      "\u001B[0;31mKeyError\u001B[0m: 'Metadata_Plate'"
+     ]
+    }
+   ],
+   "source": [],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "markdown",
+   "source": [
+    "## Whitening"
+   ],
+   "metadata": {
+    "collapsed": false
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "whN = profiling.WhiteningNormalizer(wells.loc[wells[\"pert_name\"] == \"EMPTY_\", columns2])"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "whD = whN.normalize(wells[columns2])"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "outputs": [],
+   "source": [
+    "# Save whitened profiles\n",
+    "wells[columns2] = whD\n",
+    "wells.to_csv(OUTPUT_FILE, index=False)\n"
+   ],
+   "metadata": {
+    "collapsed": false,
+    "pycharm": {
+     "name": "#%%\n"
+    }
+   }
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "name": "pycharm-f57c4e3b",
+   "language": "python",
+   "display_name": "PyCharm (git)"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 2
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython2",
+   "version": "2.7.6"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}
