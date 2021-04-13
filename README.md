@@ -1,1 +1,3 @@
-# neural-profiling
+# Neural-Profiling
+
+Author: Michael Bornholdt
